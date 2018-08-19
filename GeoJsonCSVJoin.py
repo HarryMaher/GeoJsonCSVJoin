@@ -1,25 +1,27 @@
-
+#!/usr/bin/env python3
 
 """
-A simple tool to join csv(s) data to geojson files
+A simple Python 3 tool to join csv data to geojson files
 """
 import json
 
 
-def join_csv_to_json(geojson_file, geojson_join_field, input_csv_dict, pretty = False, outfile = "outfile.geojson"):
+def join_csv_to_json(geojson_file, geojson_join_field, input_csv_dict, headers = True, pretty = False, outfile = "outfile.geojson"):
     """
     Ouput a geojson joined with csvs and print out a list of 
     errors for fields missing from CSV that didn't join.
 
-    :geojson_file: the geojson you're joining to
-    :geojson_join_field: the unique id that the geojson shares with the CSVs (join on)
-    :csv_dict: a dictionary that contains k:v pairs conforming to this format:
+    :geojson_file: Name of the geojson you're joining to. (String)
+    :geojson_join_field: The unique id that the geojson shares with the CSVs ("join on"). (String)
+    :csv_dict: A dictionary that contains key: value pairs conforming to this format:
         {"filename1.csv" : "csv_join_field1", "filename2.csv": "join_field2" ... etc}
-        Note that the join_fields all have to have the same unique id as each other and as
-        the geojson_join_field
-    :pretty: pretty print the output. Default to False to save space.
-    
+        Note: the join_fields all have to have the same unique id as each other and as
+        the geojson_join_field. (Dict of string key: value pairs)
+    :headers: If the .csv files have headers. (Optional, bool, default = True)
+    :pretty: pretty print the output. (Optional, bool, default = False)
+    :outfile: The name of the resulting file. (String)
     """
+
     with open(geojson_file, "r") as geojson:
         geojson = json.load(geojson)
     
@@ -31,15 +33,17 @@ def join_csv_to_json(geojson_file, geojson_join_field, input_csv_dict, pretty = 
             
         headers = [x.strip() for x in csv[0].split(",")]
         idx = headers.index(join_value) # quotes around our join column
-        csv = csv[1:-1] # skip the header and tail newline
-        
+        if headers:
+            csv = csv[1:-1] # skip the header and tail newline
+        else:
+            csv = csv[:-1]
         # this is the csv dictionary
         csv_dict = {}
         for line in csv:
             line_separated = line.split(",")
             # Make each of the unique id strings a key and 
             # the rest of the row a dictionary of k:v pairs.
-            csv_dict[line_separated[idx].strip()] =             {headers[i]:field.strip() for i, field in enumerate(line_separated) if i != idx}
+            csv_dict[line_separated[idx].strip()] = {headers[i]:field.strip() for i, field in enumerate(line_separated) if i != idx}
         #put this dict in with the others
         csv_dicts.append(csv_dict)
 
@@ -52,7 +56,7 @@ def join_csv_to_json(geojson_file, geojson_join_field, input_csv_dict, pretty = 
         properties_dict = {}
         properties_dict.update(feature["properties"])
         
-        ## Maybe I should have a check to see if property already in dict
+        ## Maybe check to see if property already in dict
         ## if so then prepend w/ filename_?
         for csv_d in csv_dicts:
             try:
@@ -73,8 +77,6 @@ def join_csv_to_json(geojson_file, geojson_join_field, input_csv_dict, pretty = 
         print(error)
 
 
-# In[328]:
-
-
-join_csv_to_json("KC_Precincts.geojson", "NAME", {"csv2016.csv": "Precinct"})
+#Eg:
+#join_csv_to_json("KC_Precincts.geojson", "NAME", {"csv2016.csv": "Precinct"})
 
